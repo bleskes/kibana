@@ -29,6 +29,7 @@ angular.module('kibana.stringquery', [])
     group   : "default",
     multi   : false,
     multi_arrange: 'horizontal',
+    mode    : "query" // can be filter
   }
   _.defaults($scope.panel,_d);
 
@@ -38,12 +39,27 @@ angular.module('kibana.stringquery', [])
     // query. Query events must be exchanged as arrays.
     eventBus.register($scope,'query',function(event,query) {
       $scope.panel.query = query;
-    });   
+    });
+
+    // register a listener for new panels/panels not yet initialized to get the current query
+    if ($scope.panel.mode == "filter") {
+        eventBus.register($scope, "get_filters", function () {
+            $scope.send_query();
+        });
+    }
+
+    // broadcast current state anyone who wants to listen
+    $scope.send_query();
   }
 
   $scope.send_query = function(query) {
+    if (_.isUndefined(query)) query= $scope.panel.query;
+    if ($scope.panel.mode == "filter") {
+        var esFilter= $scope.ejs.QueryFilter($scope.ejs.QueryStringQuery(query));
+       eventBus.broadcast($scope.$id, $scope.panel.group, "filter", esFilter);
+    }
     var _query = _.isArray(query) ? query : [query]
-    eventBus.broadcast($scope.$id,$scope.panel.group,'query',_query)
+    eventBus.broadcast($scope.$id,$scope.panel.group, "query",_query)
   }
 
   $scope.add_query = function() {

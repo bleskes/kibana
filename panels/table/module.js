@@ -137,8 +137,8 @@ angular.module('kibana.table', [])
       .query(ejs.FilteredQuery(
         ejs.QueryStringQuery($scope.panel.query || '*'),
         ejs.RangeFilter($scope.time.field)
-          .from($scope.time.from)
-          .to($scope.time.to)
+          .from($scope.time.from.getTime())
+          .to($scope.time.to.getTime())
         )
       )
       .highlight(

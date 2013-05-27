@@ -39,7 +39,7 @@ angular.module('kibana.timepicker', [])
     index         : '_all',
     defaultindex  : "_all",
     index_interval: "none",
-    timeformat    : "",
+    timeformat    : moment.defaultFormat,
     group         : "default",
     refresh       : {
       enable  : false, 
@@ -89,10 +89,14 @@ angular.module('kibana.timepicker', [])
     // request one be sent by broadcasting a 'get_time' with its _id to its group
     // This panel can handle multiple groups
     eventBus.register($scope,"get_time", function(event,id) {
-      eventBus.broadcast($scope.$id,id,'time',compile_time($scope.time))
+      $scope.send_time();
     });
 
-    // In case some other panel broadcasts a time, set us to an absolute range
+      eventBus.register($scope,"get_filters", function(event,id) {
+          $scope.send_time();
+      });
+
+      // In case some other panel broadcasts a time, set us to an absolute range
     eventBus.register($scope,"set_time", function(event,time) {
       $scope.panel.mode = 'absolute';
       set_timepicker(moment(time.from),moment(time.to))
@@ -200,6 +204,14 @@ angular.module('kibana.timepicker', [])
     };
   }
 
+  $scope.send_time = function () {
+      eventBus.broadcast($scope.$id,$scope.panel.group,'time',compile_time($scope.time))
+      var filter = ejs.RangeFilter($scope.time.field)
+          .from($scope.time.from.format($scope.panel.timeformat))
+          .to($scope.time.to.format($scope.panel.timeformat))
+      eventBus.broadcast($scope.$id,$scope.panel.group,'filter', filter);
+  };
+
   $scope.time_apply = function() {      
     // Update internal time object
     $scope.time = $scope.time_calc();
@@ -214,11 +226,11 @@ angular.module('kibana.timepicker', [])
         $scope.panel.index_interval
       ).then(function (p) {
         $scope.time.index = p;
-        eventBus.broadcast($scope.$id,$scope.panel.group,'time',compile_time($scope.time))
+        $scope.send_time();
       });
     } else {
       $scope.time.index = [$scope.panel.index];
-      eventBus.broadcast($scope.$id,$scope.panel.group,'time',compile_time($scope.time))
+      $scope.send_time();
     }
 
     // Update panel's string representation of the time object.Don't update if

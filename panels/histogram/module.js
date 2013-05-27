@@ -85,10 +85,26 @@ angular.module('kibana.histogram', [])
       $scope.get_data();
     });
 
-    // Now that we're all setup, request the time from our group if we don't 
-    // have it yet
+      $scope._filters = {};
+
+     eventBus.register($scope,'filter', function(event, filter, routing) {
+          if (filter) {
+              $scope._filters[routing.from] = filter;
+          }
+          else {
+              delete $scope._filters[routing.from];
+          }
+          $scope.get_data();
+      });
+
+
+    // Now that we're all setup, request the time & filters from our group
+    eventBus.broadcast($scope.$id,$scope.panel.group,'get_filters');
     if(_.isUndefined($scope.time))
       eventBus.broadcast($scope.$id,$scope.panel.group,'get_time')
+
+
+
   }
 
   $scope.remove_query = function(q) {
@@ -118,16 +134,21 @@ angular.module('kibana.histogram', [])
     $scope.panel.loading = true;
     var _segment = _.isUndefined(segment) ? 0 : segment
     var request = $scope.ejs.Request().indices($scope.index[_segment]);
-    
+
+    // combine filters
+    var ejsFilter = ejs.AndFilter([]);
+
+    for (var f in $scope._filters) {
+        ejsFilter.filters($scope._filters[f]);
+    }
+
     // Build the question part of the query
     var queries = [];
     _.each($scope.panel.query, function(v) {
       queries.push($scope.ejs.FilteredQuery(
         ejs.QueryStringQuery(v.query || '*'),
-        ejs.RangeFilter($scope.time.field)
-          .from($scope.time.from)
-          .to($scope.time.to))
-      )
+        ejsFilter
+      ))
     });
 
     // Build the facet part, injecting the query in as a facet filter

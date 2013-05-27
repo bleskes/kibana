@@ -1,0 +1,23 @@
+<kibana-panel ng-controller='derivedsinglequery' ng-init="init()">
+  <span ng-show='panel.spyable' style="position:absolute;right:0px;top:0px" class='panelextra pointer'>
+      <i bs-modal="'partials/modal.html'" class="icon-eye-open"></i>
+  </span>
+  <div ng-show="!panel.multi">
+    <form>
+      <table class="form-horizontal">
+        <tr>
+          <td><label><small>{{panel.label}}</small></label></td>
+        </tr>
+        <tr>
+          <td width="98%" style="padding-right:20px">
+              <select ng-model="selected_query"
+                      ng-change="send_query()"
+                      ng-options="q for q in derived_queries"></select>
+              <button style="margin-top:0px" type="submit" class="btn btn-info" ng-click="get_data()"><i class="icon-search"></i></button>
+          </td>
+
+        <tr>
+      </table>
+    </form>
+  </div>
+</kibana-panel>
